@@ -37,6 +37,7 @@ module.exports = defineConfig({
       })
 
       // Enregistrer les erreurs de test
+<<<<<<< HEAD
       // Remplacé 'test:after:run' par 'after:spec'
       on('after:spec', (spec, results) => {
         if (config.env.logFilePath && results && results.stats && results.stats.failures > 0) {
@@ -58,6 +59,14 @@ module.exports = defineConfig({
               })
             })
           }
+=======
+      on('test:after:run', (results, runnable) => {
+        if (results.state === 'failed' && config.env.logFilePath) {
+          fs.appendFileSync(
+            config.env.logFilePath,
+            `\nTest échoué: ${runnable.title}\nErreur: ${results.error}\n`
+          )
+>>>>>>> 879d7b24d9ca05b66fd968cb071a7e521a4bacf7
         }
       })
     },
