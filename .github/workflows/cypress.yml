@@ -1,0 +1,57 @@
+name: Cypress Screenshots CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    # Permet de déclencher manuellement le workflow
+
+jobs:
+  cypress-run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      
+      - name: Install Dependencies
+        run: npm install
+      
+      - name: Cypress run
+        uses: cypress-io/github-action@v6
+        with:
+          build: npm run build
+          start: npm start
+          wait-on: 'http://localhost:3000'
+          wait-on-timeout: 120
+      
+      - name: Upload Screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+          retention-days: 30
+      
+      - name: Generate Screenshot Report
+        if: always()
+        run: |
+          echo "## Cypress Screenshots Report" > screenshot-report.md
+          echo "Screenshots générées pendant les tests Cypress" >> screenshot-report.md
+          find cypress/screenshots -type f -name "*.png" | while read -r file; do
+            echo "- $(basename "$file")" >> screenshot-report.md
+          done
+      
+      - name: Upload Screenshot Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-report
+          path: screenshot-report.md
+          retention-days: 30

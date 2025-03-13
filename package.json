@@ -1,0 +1,24 @@
+{
+  "name": "mon-projet-cypress",
+  "version": "1.0.0",
+  "description": "Projet fictif pour démonstration de Cypress avec CI/CD",
+  "main": "index.js",
+  "scripts": {
+    "test": "cypress run",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "start": "serve -s public -p 3000",
+    "build": "mkdir -p public && echo '<html><body><h1>Projet de démonstration Cypress</h1></body></html>' > public/index.html"
+  },
+  "keywords": [
+    "cypress",
+    "ci-cd",
+    "screenshots"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "cypress": "^14.1.0",
+    "serve": "^14.2.4"
+  }
+}
