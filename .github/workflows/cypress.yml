@@ -24,14 +24,12 @@ jobs:
         run: npm install
       
       - name: Cypress run
-        id: cypress
         uses: cypress-io/github-action@v6
         with:
           build: npm run build
           start: npm start
           wait-on: 'http://localhost:3000'
           wait-on-timeout: 120
-        continue-on-error: true
       
       - name: Upload Screenshots
         uses: actions/upload-artifact@v4
@@ -57,90 +55,3 @@ jobs:
           name: screenshot-report
           path: screenshot-report.md
           retention-days: 30
-      
-      - name: Create Issue on Test Failure
-        if: steps.cypress.outcome == 'failure'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
-            const path = require('path');
-            
-            // Fonction pour extraire les erreurs des logs Cypress
-            function extractCypressErrors() {
-              let errors = [];
-              
-              try {
-                // Chercher les fichiers de logs Cypress
-                const logsDir = path.join(process.env.GITHUB_WORKSPACE, 'cypress', 'logs');
-                if (fs.existsSync(logsDir)) {
-                  const logFiles = fs.readdirSync(logsDir).filter(file => file.endsWith('.log'));
-                  
-                  for (const logFile of logFiles) {
-                    const logContent = fs.readFileSync(path.join(logsDir, logFile), 'utf8');
-                    
-                    // Extraire les erreurs liées aux attributs data-cy manquants
-                    const dataCyErrors = logContent.match(/Expected to find element: \'\[data-cy="[^"]+"\]\'[^\n]*/g) || [];
-                    errors = errors.concat(dataCyErrors);
-                  }
-                }
-              } catch (error) {
-                console.error('Erreur lors de l\'extraction des erreurs Cypress:', error);
-              }
-              
-              return errors.length > 0 ? errors : ['Des tests Cypress ont échoué, mais les détails spécifiques ne sont pas disponibles.'];
-            }
-            
-            // Créer un titre pour l'issue
-            const title = `🐞 Échec des tests Cypress - Attributs data-cy manquants`;
-            
-            // Extraire les erreurs des logs Cypress
-            const errors = extractCypressErrors();
-            
-            // Créer le corps de l'issue
-            const body = `## Échec des tests Cypress
-            
-            Des attributs data-cy requis sont manquants dans le code HTML. Ces attributs sont nécessaires pour les tests automatisés.
-            
-            ### Erreurs détectées:
-            
-            ${errors.map(error => `- ${error}`).join('\n')}
-            
-            ### Informations sur l'exécution:
-            
-            - **Workflow:** ${process.env.GITHUB_WORKFLOW}
-            - **Commit:** ${process.env.GITHUB_SHA}
-            - **Branche:** ${process.env.GITHUB_REF}
-            - **Exécuté par:** ${process.env.GITHUB_ACTOR}
-            - **Date:** ${new Date().toISOString()}
-            
-            ### Comment résoudre ce problème:
-            
-            1. Vérifiez que tous les éléments HTML requis ont les attributs data-cy appropriés
-            2. Consultez le fichier de test \`cypress/e2e/data_cy_validation.cy.js\` pour voir la liste complète des attributs data-cy attendus
-            3. Corrigez les attributs manquants et poussez les modifications
-            
-            [Voir les détails de l'exécution du workflow](https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})
-            `;
-            
-            // Créer l'issue
-            github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: title,
-              body: body,
-              labels: ['bug', 'cypress', 'data-cy', 'automated']
-            });
-            
-            console.log('Issue créée avec succès pour les tests Cypress échoués.');
-      
-      - name: Check Cypress Test Results
-        if: always()
-        run: |
-          if [ "${{ steps.cypress.outcome }}" == "failure" ]; then
-            echo "❌ Les tests Cypress ont échoué. Une issue a été créée."
-            exit 1
-          else
-            echo "✅ Tous les tests Cypress ont réussi!"
-          fi
